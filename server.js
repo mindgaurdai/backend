@@ -83,7 +83,7 @@ async function generateContentWithFailover(trimmedHistory) {
     
     try {
       const response = await currentAiClient.models.generateContent({
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: trimmedHistory,
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
