@@ -1,14 +1,14 @@
-# Use Debian-slim Node 20 base image (resolves Alpine glibc/musl compatibility errors)
+# Use Debian-slim Node 20 base image
 FROM node:20-slim
 
 # Set working directory inside the container
 WORKDIR /app
 
-# Copy package manifest (wildcard handles with or without package-lock.json)
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies reliably without failing on audit warnings or fund prompts
-RUN npm install --no-audit --fund
+# Install production dependencies cleanly without audit or funding prompts
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy remaining application source code
 COPY . .
