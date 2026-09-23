@@ -1,23 +1,23 @@
-# Use lightweight Node.js 20 base image
-FROM node:20-alpine
+# Use Debian-slim Node 20 base image (resolves Alpine glibc/musl compatibility errors)
+FROM node:20-slim
 
-# Set working directory inside container
+# Set working directory inside the container
 WORKDIR /app
 
-# Explicitly copy ONLY package.json since you do not have a lockfile
-COPY package.json ./
+# Copy package manifest (wildcard handles with or without package-lock.json)
+COPY package*.json ./
 
-# Install dependencies standardly to dynamically generate the tree
-RUN npm install
+# Install dependencies reliably without failing on audit warnings or fund prompts
+RUN npm install --no-audit --fund
 
-# Copy rest of application files
+# Copy remaining application source code
 COPY . .
 
-# Set default production environment
+# Set runtime environment variables
 ENV PORT=3000
 ENV NODE_ENV=production
 
-# Expose container port
+# Expose backend port
 EXPOSE 3000
 
 # Start server
