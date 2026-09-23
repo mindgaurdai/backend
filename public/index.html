@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MindGuard-AI</title>
   
   <!-- PWA & Meta Tags -->
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" id="metaThemeColor" content="#0f172a">
   <meta name="description" content="AI that detects wellbeing changes before they become crises.">
 
   <style>
-    /* CSS Variables for Dynamic Light / Dark Mode */
+    /* CSS Variables for Dynamic System Dark / Light Theme */
     :root {
       --bg-main: #0f172a;
       --bg-card: #1e293b;
@@ -24,144 +24,209 @@
       --accent: #0ea5e9;
       --accent-hover: #0284c7;
       --user-msg: #0369a1;
-      --ai-msg: #334155;
+      --ai-msg: #1e293b;
       --input-bg: #1e293b;
+      --overlay-bg: rgba(0, 0, 0, 0.6);
       --shimmer-1: #1e293b;
       --shimmer-2: #334155;
-      --shadow: rgba(0, 0, 0, 0.4);
+      --shadow: rgba(0, 0, 0, 0.35);
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
     }
 
     /* Light Mode Overrides */
     body.light-mode {
-      --bg-main: #f1f5f9;
+      --bg-main: #f8fafc;
       --bg-card: #ffffff;
-      --bg-sidebar: #e2e8f0;
-      --border-color: #cbd5e1;
+      --bg-sidebar: #f1f5f9;
+      --border-color: #e2e8f0;
       --text-main: #0f172a;
       --text-sub: #64748b;
       --accent: #0284c7;
       --accent-hover: #0369a1;
       --user-msg: #0284c7;
-      --ai-msg: #e2e8f0;
+      --ai-msg: #ffffff;
       --input-bg: #ffffff;
+      --overlay-bg: rgba(15, 23, 42, 0.4);
       --shimmer-1: #e2e8f0;
-      --shimmer-2: #f1f5f9;
+      --shimmer-2: #f8fafc;
       --shadow: rgba(0, 0, 0, 0.08);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     body {
       background-color: var(--bg-main);
       color: var(--text-main);
       height: 100vh;
+      height: -webkit-fill-available;
       display: flex;
       overflow: hidden;
-      transition: background-color 0.3s, color 0.3s;
+      transition: background-color 0.25s, color 0.25s;
     }
 
-    /* Sidebar - Multi Session Drawer */
+    /* Sidebar - Navigation Drawer */
     .sidebar-overlay {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+      inset: 0;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(3px);
       z-index: 90;
-      display: none;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .sidebar-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .sidebar {
-      width: 280px;
+      width: 300px;
       background-color: var(--bg-sidebar);
       border-right: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
       height: 100%;
       position: fixed;
-      left: -280px;
+      left: 0;
       top: 0;
       z-index: 100;
-      transition: left 0.3s ease;
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .sidebar.open { left: 0; }
-    .sidebar-overlay.open { display: block; }
+    .sidebar.active {
+      transform: translateX(0);
+    }
 
     @media (min-width: 900px) {
-      .sidebar { position: static; left: 0; }
-      .sidebar-overlay { display: none !important; }
-      .menu-btn { display: none; }
+      .sidebar {
+        position: static;
+        transform: none !important;
+      }
+      .sidebar-overlay {
+        display: none !important;
+      }
+      .menu-btn {
+        display: none !important;
+      }
     }
 
     .sidebar-header {
-      padding: 16px;
+      padding: 18px 16px;
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .sidebar-header img { width: 32px; height: 32px; border-radius: 6px; }
-    .sidebar-header h2 { font-size: 1.1rem; color: var(--accent); }
-
-    .new-chat-btn-sidebar {
-      margin: 12px;
-      padding: 10px 14px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
+    .sidebar-header img {
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .sidebar-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.3px;
+    }
+
+    .new-chat-btn {
+      margin: 12px 16px;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
       font-weight: 600;
+      font-size: 0.95rem;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
     }
-    .new-chat-btn-sidebar:hover { background: var(--accent-hover); }
+
+    .new-chat-btn:active {
+      transform: scale(0.98);
+    }
 
     .session-list {
       flex: 1;
       overflow-y: auto;
-      padding: 8px;
+      padding: 8px 12px;
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
 
     .session-item {
-      padding: 10px 12px;
-      border-radius: 6px;
+      padding: 12px;
+      border-radius: 10px;
       color: var(--text-main);
       font-size: 0.9rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .session-item:hover, .session-item.active {
+      background-color: var(--bg-card);
+    }
+
+    .session-item.active {
+      font-weight: 600;
+      border-left: 3px solid var(--accent);
+    }
+
+    .session-title {
+      flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .session-item:hover, .session-item.active {
-      background-color: var(--bg-card);
-    }
-    .delete-session-btn {
+
+    .session-menu-trigger {
       background: transparent;
       border: none;
       color: var(--text-sub);
+      padding: 4px 6px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 0.9rem;
-      display: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
     }
-    .session-item:hover .delete-session-btn { display: block; }
 
-    /* Main Content Area */
+    .session-menu-trigger:hover {
+      color: var(--text-main);
+      background: var(--border-color);
+    }
+
+    /* Main Container */
     .main-container {
       flex: 1;
       display: flex;
       flex-direction: column;
       height: 100%;
       position: relative;
+      background: var(--bg-main);
     }
 
     /* Top Navigation Header */
@@ -173,48 +238,74 @@
       align-items: center;
       justify-content: space-between;
       background: var(--bg-main);
+      z-index: 10;
     }
 
-    .top-bar-left { display: flex; align-items: center; gap: 12px; }
-    .menu-btn, .icon-btn {
+    .top-bar-left, .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
       background: transparent;
       border: none;
       color: var(--text-main);
-      font-size: 1.4rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       cursor: pointer;
-      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-card);
+    }
+
+    .icon-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-title img {
+      width: 28px;
+      height: 28px;
       border-radius: 6px;
     }
-    .menu-btn:hover, .icon-btn:hover { background: var(--bg-card); }
 
-    .brand-title { display: flex; align-items: center; gap: 8px; }
-    .brand-title img { width: 28px; height: 28px; }
-    .brand-title h1 { font-size: 1.1rem; color: var(--accent); }
+    .brand-title h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
 
-    .top-bar-right { display: flex; align-items: center; gap: 8px; }
-
-    /* PWA Install Pill Banner */
+    /* PWA Install Pill */
     .install-pill {
       display: none;
       align-items: center;
       gap: 6px;
       background: var(--accent);
-      color: #fff;
-      padding: 6px 12px;
+      color: #ffffff;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 0.8rem;
-      font-weight: bold;
+      font-weight: 700;
       border: none;
       cursor: pointer;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.04); }
-      100% { transform: scale(1); }
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
     }
 
-    /* Chat Messages Box */
+    /* Chat Messages Window */
     .chat-box {
       flex: 1;
       overflow-y: auto;
@@ -225,50 +316,54 @@
       max-width: 800px;
       width: 100%;
       margin: 0 auto;
+      scroll-behavior: smooth;
     }
 
     .message {
       max-width: 85%;
-      padding: 12px 16px;
-      border-radius: 12px;
-      line-height: 1.5;
+      padding: 14px 18px;
+      border-radius: 16px;
+      line-height: 1.55;
       font-size: 0.95rem;
       word-wrap: break-word;
       white-space: pre-wrap;
+      box-shadow: 0 2px 6px var(--shadow);
     }
 
     .message.user {
       align-self: flex-end;
       background-color: var(--user-msg);
       color: #ffffff;
-      border-bottom-right-radius: 2px;
+      border-bottom-right-radius: 4px;
     }
 
     .message.ai {
       align-self: flex-start;
       background-color: var(--ai-msg);
       color: var(--text-main);
-      border-bottom-left-radius: 2px;
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border-color);
     }
 
-    /* Gemini Thinking / Shimmer Loading State */
+    /* Gemini Thinking Loader */
     .thinking-container {
       align-self: flex-start;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      width: 60%;
-      max-width: 300px;
-      padding: 12px 16px;
+      gap: 10px;
+      width: 65%;
+      max-width: 320px;
+      padding: 14px 18px;
       background-color: var(--ai-msg);
-      border-radius: 12px;
-      border-bottom-left-radius: 2px;
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border-color);
     }
 
-    .thinking-text {
+    .thinking-header {
       font-size: 0.85rem;
       color: var(--text-sub);
-      font-style: italic;
+      font-weight: 500;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -277,7 +372,7 @@
     .shimmer-line {
       height: 10px;
       width: 100%;
-      border-radius: 4px;
+      border-radius: 6px;
       background: linear-gradient(90deg, var(--shimmer-1) 25%, var(--shimmer-2) 50%, var(--shimmer-1) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
@@ -288,7 +383,7 @@
       100% { background-position: -200% 0; }
     }
 
-    /* ChatGPT-style Floating Input Section */
+    /* ChatGPT Floating Input Box */
     .input-container {
       padding: 12px 16px 20px 16px;
       max-width: 800px;
@@ -298,12 +393,12 @@
 
     .input-box {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       background: var(--input-bg);
       border: 1px solid var(--border-color);
       border-radius: 24px;
-      padding: 6px 12px 6px 16px;
-      box-shadow: 0 4px 12px var(--shadow);
+      padding: 8px 12px 8px 18px;
+      box-shadow: 0 4px 16px var(--shadow);
       gap: 8px;
     }
 
@@ -314,60 +409,239 @@
       color: var(--text-main);
       outline: none;
       resize: none;
-      max-height: 120px;
+      max-height: 140px;
       font-size: 0.95rem;
-      line-height: 1.4;
-      padding: 8px 0;
+      line-height: 1.45;
+      padding: 6px 0;
     }
 
     .action-btn {
       background: transparent;
       border: none;
       color: var(--text-sub);
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 8px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: color 0.2s, background 0.2s;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
     }
 
-    .action-btn:hover { color: var(--text-main); background: var(--bg-main); }
-    .action-btn.listening { color: #ef4444; animation: pulse 1s infinite; }
+    .action-btn hover {
+      color: var(--text-main);
+      background: var(--bg-main);
+    }
+
+    .action-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    .action-btn.listening {
+      color: var(--danger);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
 
     .send-btn {
       background: var(--accent);
-      color: #fff;
+      color: #ffffff;
     }
-    .send-btn:hover { background: var(--accent-hover); color: #fff; }
-    .send-btn:disabled { background: var(--border-color); cursor: not-allowed; }
+
+    .send-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Mobile Bottom Sheet Modal */
+    .bottom-sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(2px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .bottom-sheet-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .bottom-sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-card);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      border-top: 1px solid var(--border-color);
+      padding: 20px 20px 32px 20px;
+      z-index: 210;
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .bottom-sheet.active {
+      transform: translateY(0);
+    }
+
+    .bottom-sheet-handle {
+      width: 40px;
+      height: 5px;
+      background: var(--border-color);
+      border-radius: 10px;
+      align-self: center;
+      margin-bottom: 8px;
+    }
+
+    .sheet-option {
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+    }
+
+    .sheet-option:hover {
+      background: var(--bg-main);
+    }
+
+    .sheet-option.danger {
+      color: var(--danger);
+    }
+
+    .sheet-option.danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Custom Rename Modal */
+    .rename-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(3px);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .rename-modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .rename-modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 25px var(--shadow);
+    }
+
+    .rename-modal h3 {
+      font-size: 1.1rem;
+      color: var(--text-main);
+    }
+
+    .rename-modal input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-main);
+      color: var(--text-main);
+      outline: none;
+      font-size: 0.95rem;
+    }
+
+    .rename-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
 
   <!-- Mobile Sidebar Overlay -->
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeAllOverlays()"></div>
 
-  <!-- Left Sidebar for Multi-Session Management -->
+  <!-- Sidebar Navigation Drawer -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <img src="icon.png" alt="MindGuard-AI Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2965/2965358.png'">
       <h2>MindGuard-AI</h2>
     </div>
-    <button class="new-chat-btn-sidebar" onclick="createNewSession()">
-      <span>+</span> New Conversation
+    <button class="new-chat-btn" onclick="createNewSession()">
+      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      New Conversation
     </button>
     <div class="session-list" id="sessionList"></div>
   </aside>
 
-  <!-- Main Chat Workspace -->
+  <!-- Main Content Workspace -->
   <main class="main-container">
-    <!-- Top Header Navigation -->
+    <!-- Top Bar Navigation -->
     <header class="top-bar">
       <div class="top-bar-left">
-        <button class="menu-btn" onclick="toggleSidebar()" title="Open Sessions">☰</button>
+        <button class="icon-btn menu-btn" onclick="openSidebar()" title="Open Conversations">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
         <div class="brand-title">
           <img src="icon.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2965/2965358.png'">
           <h1>MindGuard-AI</h1>
@@ -375,130 +649,157 @@
       </div>
 
       <div class="top-bar-right">
-        <!-- PWA Install Button Pop-Up Pill -->
+        <!-- PWA Install Button Pill -->
         <button class="install-pill" id="installPill" onclick="installPWA()">
           📥 Install App
         </button>
 
-        <!-- Theme Switcher Toggle (System / Light / Dark) -->
-        <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Theme">🌙</button>
-
-        <!-- New Chat Quick Button -->
-        <button class="icon-btn" onclick="createNewSession()" title="New Chat">➕</button>
+        <!-- New Chat Action -->
+        <button class="icon-btn" onclick="createNewSession()" title="New Chat">
+          <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
       </div>
     </header>
 
-    <!-- Scrollable Chat Output Area -->
+    <!-- Scrollable Chat Area -->
     <section class="chat-box" id="chatBox"></section>
 
-    <!-- Floating Text Area with Speech Recognition -->
+    <!-- Floating Action Input Box -->
     <footer class="input-container">
       <div class="input-box">
         <textarea id="userInput" rows="1" placeholder="Share your mood or thoughts..." onkeydown="handleKeyDown(event)"></textarea>
         
-        <!-- Web Speech Recognition Mic Option -->
-        <button class="action-btn" id="micBtn" onclick="toggleSpeechRecognition()" title="Voice Input">🎙️</button>
+        <!-- Web Speech Recognition Mic Button -->
+        <button class="action-btn" id="micBtn" onclick="toggleSpeechRecognition()" title="Voice Input">
+          <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+        </button>
 
-        <button class="action-btn send-btn" id="sendBtn" onclick="sendMessage()" title="Send Message">➔</button>
+        <!-- Send Message Button -->
+        <button class="action-btn send-btn" id="sendBtn" onclick="sendMessage()" title="Send Message">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
       </div>
     </footer>
   </main>
 
+  <!-- Mobile Bottom Sheet Options -->
+  <div class="bottom-sheet-overlay" id="bottomSheetOverlay" onclick="closeAllOverlays()"></div>
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="bottom-sheet-handle"></div>
+    <button class="sheet-option" onclick="triggerRenameSession()">
+      ✏️ Rename Conversation
+    </button>
+    <button class="sheet-option danger" onclick="triggerDeleteSession()">
+      🗑️ Delete Conversation
+    </button>
+  </div>
+
+  <!-- Custom Rename Modal -->
+  <div class="rename-modal-overlay" id="renameModalOverlay">
+    <div class="rename-modal">
+      <h3>Rename Conversation</h3>
+      <input type="text" id="renameInput" placeholder="Enter conversation title...">
+      <div class="rename-modal-actions">
+        <button class="btn-secondary" onclick="closeRenameModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveSessionRename()">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // System & Application State Management
+    // System State Engine
     let state = {
       sessions: {},
       currentSessionId: null,
-      theme: 'auto' // 'auto', 'dark', 'light'
+      selectedTargetSessionId: null
     };
 
     let speechRecognizer = null;
     let isListening = false;
     let deferredPrompt = null;
+    let activeOverlayStack = [];
 
     const INITIAL_WELCOME = "Hello! I am MindGuard-AI. How are you feeling today? You can share your mood, stress levels, or daily sleep quality.";
 
-    // --- 1. DOM Initialization & Theme Control ---
+    // --- 1. System Initialization & Theme Handler ---
     window.addEventListener('DOMContentLoaded', () => {
       loadStateFromStorage();
-      setupTheme();
+      setupSystemThemeEngine();
       registerPWA();
       setupSpeechRecognition();
+      setupHistoryBackHandler();
       renderSidebar();
       renderCurrentChat();
     });
 
-    function setupTheme() {
-      const storedTheme = localStorage.getItem('mg_theme') || 'auto';
-      state.theme = storedTheme;
-      applyTheme(storedTheme);
+    // Automatic System Default Theme Syncing
+    function setupSystemThemeEngine() {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      const applySystemTheme = (e) => {
+        const isDark = e.matches;
+        document.body.classList.toggle('light-mode', !isDark);
+        const metaTheme = document.getElementById('metaThemeColor');
+        if (metaTheme) {
+          metaTheme.setAttribute('content', isDark ? '#0f172a' : '#f8fafc');
+        }
+      };
 
-      // Listen for system theme changes if set to auto
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (state.theme === 'auto') {
-          applyTheme('auto');
+      // Initial Sync
+      applySystemTheme(mediaQuery);
+
+      // Listen for runtime System Theme Switch
+      mediaQuery.addEventListener('change', applySystemTheme);
+    }
+
+    // --- 2. Mobile Hardware Back Button Support (History API) ---
+    function setupHistoryBackHandler() {
+      window.addEventListener('popstate', (e) => {
+        if (activeOverlayStack.length > 0) {
+          const topOverlay = activeOverlayStack.pop();
+          closeOverlayUI(topOverlay);
         }
       });
     }
 
-    function applyTheme(themeMode) {
-      const themeBtn = document.getElementById('themeBtn');
-      let useDark = false;
+    function pushOverlayState(overlayName) {
+      activeOverlayStack.push(overlayName);
+      history.pushState({ overlay: overlayName }, '');
+    }
 
-      if (themeMode === 'auto') {
-        useDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      } else {
-        useDark = (themeMode === 'dark');
-      }
-
-      if (useDark) {
-        document.body.classList.remove('light-mode');
-        themeBtn.innerText = '🌙';
-      } else {
-        document.body.classList.add('light-mode');
-        themeBtn.innerText = '☀️';
+    function closeAllOverlays() {
+      while (activeOverlayStack.length > 0) {
+        history.back();
       }
     }
 
-    function toggleTheme() {
-      if (state.theme === 'auto' || state.theme === 'dark') {
-        state.theme = 'light';
-      } else {
-        state.theme = 'dark';
+    function closeOverlayUI(overlayName) {
+      if (overlayName === 'sidebar') {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+      } else if (overlayName === 'bottomSheet') {
+        document.getElementById('bottomSheet').classList.remove('active');
+        document.getElementById('bottomSheetOverlay').classList.remove('active');
+      } else if (overlayName === 'renameModal') {
+        document.getElementById('renameModalOverlay').classList.remove('active');
       }
-      localStorage.setItem('mg_theme', state.theme);
-      applyTheme(state.theme);
     }
 
-    // --- 2. PWA Registration & Installation Pill ---
-    function registerPWA() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-          .then(() => console.log('Service Worker Registered'))
-          .catch(err => console.log('SW Registration failed:', err));
-      }
-
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installPill = document.getElementById('installPill');
-        if (installPill) installPill.style.display = 'flex';
-      });
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('active');
+      document.getElementById('sidebarOverlay').classList.add('active');
+      pushOverlayState('sidebar');
     }
 
-    function installPWA() {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User installed the PWA');
-        }
-        deferredPrompt = null;
-        document.getElementById('installPill').style.display = 'none';
-      });
+    function openBottomSheet(sessionId, event) {
+      event.stopPropagation();
+      state.selectedTargetSessionId = sessionId;
+      document.getElementById('bottomSheet').classList.add('active');
+      document.getElementById('bottomSheetOverlay').classList.add('active');
+      pushOverlayState('bottomSheet');
     }
 
-    // --- 3. Speech Recognition (Browser Native API) ---
+    // --- 3. Speech Recognition Engine ---
     function setupSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -528,8 +829,7 @@
         autoResizeInput(inputEl);
       };
 
-      speechRecognizer.onerror = (err) => {
-        console.error('Speech Recognition Error:', err);
+      speechRecognizer.onerror = () => {
         isListening = false;
         document.getElementById('micBtn').classList.remove('listening');
       };
@@ -544,7 +844,7 @@
       }
     }
 
-    // --- 4. Multi-Session LocalStorage Logic ---
+    // --- 4. Multi-Session Management (LocalStorage) ---
     function loadStateFromStorage() {
       const savedSessions = localStorage.getItem('mg_sessions');
       const savedActiveId = localStorage.getItem('mg_active_id');
@@ -580,7 +880,7 @@
       if (shouldRender) {
         renderSidebar();
         renderCurrentChat();
-        closeSidebar();
+        closeAllOverlays();
       }
     }
 
@@ -590,11 +890,13 @@
       saveStateToStorage();
       renderSidebar();
       renderCurrentChat();
-      closeSidebar();
+      closeAllOverlays();
     }
 
-    function deleteSession(id, event) {
-      event.stopPropagation();
+    function triggerDeleteSession() {
+      const id = state.selectedTargetSessionId;
+      if (!id || !state.sessions[id]) return;
+
       delete state.sessions[id];
       const remainingIds = Object.keys(state.sessions);
 
@@ -607,6 +909,37 @@
       saveStateToStorage();
       renderSidebar();
       renderCurrentChat();
+      closeAllOverlays();
+    }
+
+    function triggerRenameSession() {
+      const id = state.selectedTargetSessionId;
+      if (!id || !state.sessions[id]) return;
+
+      const currentTitle = state.sessions[id].title;
+      const inputEl = document.getElementById('renameInput');
+      inputEl.value = currentTitle;
+
+      document.getElementById('renameModalOverlay').classList.add('active');
+      pushOverlayState('renameModal');
+      setTimeout(() => inputEl.focus(), 100);
+    }
+
+    function saveSessionRename() {
+      const id = state.selectedTargetSessionId;
+      const inputEl = document.getElementById('renameInput');
+      const newTitle = inputEl.value.trim();
+
+      if (id && state.sessions[id] && newTitle) {
+        state.sessions[id].title = newTitle;
+        saveStateToStorage();
+        renderSidebar();
+      }
+      closeAllOverlays();
+    }
+
+    function closeRenameModal() {
+      closeAllOverlays();
     }
 
     function renderSidebar() {
@@ -620,8 +953,8 @@
 
         item.onclick = () => switchSession(session.id);
         item.innerHTML = `
-          <span style="overflow:hidden; text-overflow:ellipsis;">💬 ${escapeHTML(session.title)}</span>
-          <button class="delete-session-btn" onclick="deleteSession('${session.id}', event)">✕</button>
+          <span class="session-title">💬 ${escapeHTML(session.title)}</span>
+          <button class="session-menu-trigger" onclick="openBottomSheet('${session.id}', event)" title="Options">⋮</button>
         `;
         listEl.appendChild(item);
       });
@@ -640,7 +973,7 @@
       });
     }
 
-    // --- 5. Message Handling & Gemini API Integration ---
+    // --- 5. Messaging Engine & Backend Connectivity ---
     async function sendMessage() {
       const inputEl = document.getElementById('userInput');
       const text = inputEl.value.trim();
@@ -651,22 +984,21 @@
 
       const activeSession = state.sessions[state.currentSessionId];
       
-      // Auto-title conversation on first user input
+      // Auto-title conversation on first prompt
       if (activeSession.history.length <= 1) {
-        activeSession.title = text.length > 20 ? text.substring(0, 20) + '...' : text;
+        activeSession.title = text.length > 22 ? text.substring(0, 22) + '...' : text;
         renderSidebar();
       }
 
-      // 1. Add User Message to UI & State
+      // Add User Message UI
       appendMessageUI(text, 'user');
       activeSession.history.push({ role: 'user', parts: [{ text }] });
       saveStateToStorage();
 
-      // 2. Show Gemini Thinking Animation
+      // Show Gemini Thinking Loader
       const thinkingEl = showThinkingAnimation();
 
       try {
-        // Post entire session history to backend
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -677,17 +1009,17 @@
         thinkingEl.remove();
 
         if (response.status === 429) {
-          appendMessageUI(data.error || "Too many messages. Please pause for a minute.", 'ai');
+          appendMessageUI(data.error || "Rate limit exceeded. Please wait a minute.", 'ai');
         } else if (data.text) {
           appendMessageUI(data.text, 'ai');
           activeSession.history.push({ role: 'model', parts: [{ text: data.text }] });
           saveStateToStorage();
         } else {
-          appendMessageUI("I encountered an issue processing your request.", 'ai');
+          appendMessageUI("Unable to process response at this time.", 'ai');
         }
       } catch (err) {
         thinkingEl.remove();
-        appendMessageUI("Network error: Unable to communicate with MindGuard backend.", 'ai');
+        appendMessageUI("Network error: Failed to connect to MindGuard engine.", 'ai');
       }
     }
 
@@ -706,16 +1038,40 @@
       const container = document.createElement('div');
       container.classList.add('thinking-container');
       container.innerHTML = `
-        <div class="thinking-text">✨ MindGuard-AI is reflecting...</div>
+        <div class="thinking-header">✨ MindGuard-AI is reflecting...</div>
         <div class="shimmer-line"></div>
-        <div class="shimmer-line" style="width: 70%;"></div>
+        <div class="shimmer-line" style="width: 75%;"></div>
       `;
       chatBox.appendChild(container);
       chatBox.scrollTop = chatBox.scrollHeight;
       return container;
     }
 
-    // --- 6. Helper Functions ---
+    // --- 6. Utilities & Service Worker Registration ---
+    function registerPWA() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => console.log('Service Worker Active'))
+          .catch(err => console.log('SW Registration Failed:', err));
+      }
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installPill = document.getElementById('installPill');
+        if (installPill) installPill.style.display = 'flex';
+      });
+    }
+
+    function installPWA() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => {
+        deferredPrompt = null;
+        document.getElementById('installPill').style.display = 'none';
+      });
+    }
+
     function handleKeyDown(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -727,17 +1083,7 @@
 
     function autoResizeInput(el) {
       el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-    }
-
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('sidebarOverlay').classList.toggle('open');
-    }
-
-    function closeSidebar() {
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('sidebarOverlay').classList.remove('open');
+      el.style.height = Math.min(el.scrollHeight, 140) + 'px';
     }
 
     function escapeHTML(str) {
