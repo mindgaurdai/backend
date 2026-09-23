@@ -1,24 +1,20 @@
-# Use Debian-slim Node 20 base image
-FROM node:20-slim
+# Use full Node 20 image (includes all necessary native build toolchains)
+FROM node:20
 
-# Set working directory inside the container
 WORKDIR /app
 
-# Copy package files
+# Copy package manifest
 COPY package*.json ./
 
-# Install production dependencies cleanly without audit or funding prompts
-RUN npm install --omit=dev --no-audit --no-fund
+# Install dependencies cleanly using legacy peer resolution to prevent lockfile conflicts
+RUN npm install --legacy-peer-deps
 
-# Copy remaining application source code
+# Copy application source code
 COPY . .
 
-# Set runtime environment variables
 ENV PORT=3000
 ENV NODE_ENV=production
 
-# Expose backend port
 EXPOSE 3000
 
-# Start server
 CMD ["node", "server.js"]
