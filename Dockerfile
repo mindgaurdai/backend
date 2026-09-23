@@ -4,16 +4,16 @@ FROM node:20-alpine
 # Set working directory inside container
 WORKDIR /app
 
-# Copy package manifests
-COPY package*.json ./
+# Explicitly copy ONLY package.json since you do not have a lockfile
+COPY package.json ./
 
-# Install production dependencies safely
-RUN npm install --omit=dev
+# Install dependencies standardly to dynamically generate the tree
+RUN npm install
 
 # Copy rest of application files
 COPY . .
 
-# Set default production port
+# Set default production environment
 ENV PORT=3000
 ENV NODE_ENV=production
 
