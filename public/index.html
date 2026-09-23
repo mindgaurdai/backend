@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MindGuard-AI</title>
+  
+  <!-- PWA & Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="AI that detects wellbeing changes before they become crises.">
+
+  <style>
+    /* CSS Variables for Dynamic Light / Dark Mode */
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-sidebar: #090d16;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #0ea5e9;
+      --accent-hover: #0284c7;
+      --user-msg: #0369a1;
+      --ai-msg: #334155;
+      --input-bg: #1e293b;
+      --shimmer-1: #1e293b;
+      --shimmer-2: #334155;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    /* Light Mode Overrides */
+    body.light-mode {
+      --bg-main: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-sidebar: #e2e8f0;
+      --border-color: #cbd5e1;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --user-msg: #0284c7;
+      --ai-msg: #e2e8f0;
+      --input-bg: #ffffff;
+      --shimmer-1: #e2e8f0;
+      --shimmer-2: #f1f5f9;
+      --shadow: rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Sidebar - Multi Session Drawer */
+    .sidebar-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 90;
+      display: none;
+    }
+
+    .sidebar {
+      width: 280px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      position: fixed;
+      left: -280px;
+      top: 0;
+      z-index: 100;
+      transition: left 0.3s ease;
+    }
+
+    .sidebar.open { left: 0; }
+    .sidebar-overlay.open { display: block; }
+
+    @media (min-width: 900px) {
+      .sidebar { position: static; left: 0; }
+      .sidebar-overlay { display: none !important; }
+      .menu-btn { display: none; }
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-header img { width: 32px; height: 32px; border-radius: 6px; }
+    .sidebar-header h2 { font-size: 1.1rem; color: var(--accent); }
+
+    .new-chat-btn-sidebar {
+      margin: 12px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .new-chat-btn-sidebar:hover { background: var(--accent-hover); }
+
+    .session-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .session-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-item:hover, .session-item.active {
+      background-color: var(--bg-card);
+    }
+    .delete-session-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .session-item:hover .delete-session-btn { display: block; }
+
+    /* Main Content Area */
+    .main-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Top Navigation Header */
+    .top-bar {
+      height: 60px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-main);
+    }
+
+    .top-bar-left { display: flex; align-items: center; gap: 12px; }
+    .menu-btn, .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .menu-btn:hover, .icon-btn:hover { background: var(--bg-card); }
+
+    .brand-title { display: flex; align-items: center; gap: 8px; }
+    .brand-title img { width: 28px; height: 28px; }
+    .brand-title h1 { font-size: 1.1rem; color: var(--accent); }
+
+    .top-bar-right { display: flex; align-items: center; gap: 8px; }
+
+    /* PWA Install Pill Banner */
+    .install-pill {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    /* Chat Messages Box */
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background-color: var(--user-msg);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+    }
+
+    .message.ai {
+      align-self: flex-start;
+      background-color: var(--ai-msg);
+      color: var(--text-main);
+      border-bottom-left-radius: 2px;
+    }
+
+    /* Gemini Thinking / Shimmer Loading State */
+    .thinking-container {
+      align-self: flex-start;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 60%;
+      max-width: 300px;
+      padding: 12px 16px;
+      background-color: var(--ai-msg);
+      border-radius: 12px;
+      border-bottom-left-radius: 2px;
+    }
+
+    .thinking-text {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .shimmer-line {
+      height: 10px;
+      width: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--shimmer-1) 25%, var(--shimmer-2) 50%, var(--shimmer-1) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ChatGPT-style Floating Input Section */
+    .input-container {
+      padding: 12px 16px 20px 16px;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .input-box {
+      display: flex;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 6px 12px 6px 16px;
+      box-shadow: 0 4px 12px var(--shadow);
+      gap: 8px;
+    }
+
+    .input-box textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      padding: 8px 0;
+    }
+
+    .action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .action-btn:hover { color: var(--text-main); background: var(--bg-main); }
+    .action-btn.listening { color: #ef4444; animation: pulse 1s infinite; }
+
+    .send-btn {
+      background: var(--accent);
+      color: #fff;
+    }
+    .send-btn:hover { background: var(--accent-hover); color: #fff; }
+    .send-btn:disabled { background: var(--border-color); cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Left Sidebar for Multi-Session Management -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="icon.png" alt="MindGuard-AI Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2965/2965358.png'">
+      <h2>MindGuard-AI</h2>
+    </div>
+    <button class="new-chat-btn-sidebar" onclick="createNewSession()">
+      <span>+</span> New Conversation
+    </button>
+    <div class="session-list" id="sessionList"></div>
+  </aside>
+
+  <!-- Main Chat Workspace -->
+  <main class="main-container">
+    <!-- Top Header Navigation -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button class="menu-btn" onclick="toggleSidebar()" title="Open Sessions">☰</button>
+        <div class="brand-title">
+          <img src="icon.png" alt="Logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2965/2965358.png'">
+          <h1>MindGuard-AI</h1>
+        </div>
+      </div>
+
+      <div class="top-bar-right">
+        <!-- PWA Install Button Pop-Up Pill -->
+        <button class="install-pill" id="installPill" onclick="installPWA()">
+          📥 Install App
+        </button>
+
+        <!-- Theme Switcher Toggle (System / Light / Dark) -->
+        <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Theme">🌙</button>
+
+        <!-- New Chat Quick Button -->
+        <button class="icon-btn" onclick="createNewSession()" title="New Chat">➕</button>
+      </div>
+    </header>
+
+    <!-- Scrollable Chat Output Area -->
+    <section class="chat-box" id="chatBox"></section>
+
+    <!-- Floating Text Area with Speech Recognition -->
+    <footer class="input-container">
+      <div class="input-box">
+        <textarea id="userInput" rows="1" placeholder="Share your mood or thoughts..." onkeydown="handleKeyDown(event)"></textarea>
+        
+        <!-- Web Speech Recognition Mic Option -->
+        <button class="action-btn" id="micBtn" onclick="toggleSpeechRecognition()" title="Voice Input">🎙️</button>
+
+        <button class="action-btn send-btn" id="sendBtn" onclick="sendMessage()" title="Send Message">➔</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // System & Application State Management
+    let state = {
+      sessions: {},
+      currentSessionId: null,
+      theme: 'auto' // 'auto', 'dark', 'light'
+    };
+
+    let speechRecognizer = null;
+    let isListening = false;
+    let deferredPrompt = null;
+
+    const INITIAL_WELCOME = "Hello! I am MindGuard-AI. How are you feeling today? You can share your mood, stress levels, or daily sleep quality.";
+
+    // --- 1. DOM Initialization & Theme Control ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+      setupTheme();
+      registerPWA();
+      setupSpeechRecognition();
+      renderSidebar();
+      renderCurrentChat();
+    });
+
+    function setupTheme() {
+      const storedTheme = localStorage.getItem('mg_theme') || 'auto';
+      state.theme = storedTheme;
+      applyTheme(storedTheme);
+
+      // Listen for system theme changes if set to auto
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (state.theme === 'auto') {
+          applyTheme('auto');
+        }
+      });
+    }
+
+    function applyTheme(themeMode) {
+      const themeBtn = document.getElementById('themeBtn');
+      let useDark = false;
+
+      if (themeMode === 'auto') {
+        useDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } else {
+        useDark = (themeMode === 'dark');
+      }
+
+      if (useDark) {
+        document.body.classList.remove('light-mode');
+        themeBtn.innerText = '🌙';
+      } else {
+        document.body.classList.add('light-mode');
+        themeBtn.innerText = '☀️';
+      }
+    }
+
+    function toggleTheme() {
+      if (state.theme === 'auto' || state.theme === 'dark') {
+        state.theme = 'light';
+      } else {
+        state.theme = 'dark';
+      }
+      localStorage.setItem('mg_theme', state.theme);
+      applyTheme(state.theme);
+    }
+
+    // --- 2. PWA Registration & Installation Pill ---
+    function registerPWA() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => console.log('Service Worker Registered'))
+          .catch(err => console.log('SW Registration failed:', err));
+      }
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installPill = document.getElementById('installPill');
+        if (installPill) installPill.style.display = 'flex';
+      });
+    }
+
+    function installPWA() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User installed the PWA');
+        }
+        deferredPrompt = null;
+        document.getElementById('installPill').style.display = 'none';
+      });
+    }
+
+    // --- 3. Speech Recognition (Browser Native API) ---
+    function setupSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        document.getElementById('micBtn').style.display = 'none';
+        return;
+      }
+
+      speechRecognizer = new SpeechRecognition();
+      speechRecognizer.continuous = false;
+      speechRecognizer.interimResults = false;
+      speechRecognizer.lang = 'en-US';
+
+      speechRecognizer.onstart = () => {
+        isListening = true;
+        document.getElementById('micBtn').classList.add('listening');
+      };
+
+      speechRecognizer.onend = () => {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+      };
+
+      speechRecognizer.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const inputEl = document.getElementById('userInput');
+        inputEl.value = (inputEl.value ? inputEl.value + ' ' : '') + transcript;
+        autoResizeInput(inputEl);
+      };
+
+      speechRecognizer.onerror = (err) => {
+        console.error('Speech Recognition Error:', err);
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+      };
+    }
+
+    function toggleSpeechRecognition() {
+      if (!speechRecognizer) return;
+      if (isListening) {
+        speechRecognizer.stop();
+      } else {
+        speechRecognizer.start();
+      }
+    }
+
+    // --- 4. Multi-Session LocalStorage Logic ---
+    function loadStateFromStorage() {
+      const savedSessions = localStorage.getItem('mg_sessions');
+      const savedActiveId = localStorage.getItem('mg_active_id');
+
+      if (savedSessions) {
+        state.sessions = JSON.parse(savedSessions);
+      }
+
+      if (savedActiveId && state.sessions[savedActiveId]) {
+        state.currentSessionId = savedActiveId;
+      } else {
+        createNewSession(false);
+      }
+    }
+
+    function saveStateToStorage() {
+      localStorage.setItem('mg_sessions', JSON.stringify(state.sessions));
+      localStorage.setItem('mg_active_id', state.currentSessionId);
+    }
+
+    function createNewSession(shouldRender = true) {
+      const newId = 'session_' + Date.now();
+      state.sessions[newId] = {
+        id: newId,
+        title: 'New Conversation',
+        history: [
+          { role: 'model', parts: [{ text: INITIAL_WELCOME }] }
+        ]
+      };
+      state.currentSessionId = newId;
+      saveStateToStorage();
+
+      if (shouldRender) {
+        renderSidebar();
+        renderCurrentChat();
+        closeSidebar();
+      }
+    }
+
+    function switchSession(id) {
+      if (!state.sessions[id]) return;
+      state.currentSessionId = id;
+      saveStateToStorage();
+      renderSidebar();
+      renderCurrentChat();
+      closeSidebar();
+    }
+
+    function deleteSession(id, event) {
+      event.stopPropagation();
+      delete state.sessions[id];
+      const remainingIds = Object.keys(state.sessions);
+
+      if (remainingIds.length === 0) {
+        createNewSession(false);
+      } else if (state.currentSessionId === id) {
+        state.currentSessionId = remainingIds[remainingIds.length - 1];
+      }
+
+      saveStateToStorage();
+      renderSidebar();
+      renderCurrentChat();
+    }
+
+    function renderSidebar() {
+      const listEl = document.getElementById('sessionList');
+      listEl.innerHTML = '';
+
+      Object.values(state.sessions).reverse().forEach(session => {
+        const item = document.createElement('div');
+        item.classList.add('session-item');
+        if (session.id === state.currentSessionId) item.classList.add('active');
+
+        item.onclick = () => switchSession(session.id);
+        item.innerHTML = `
+          <span style="overflow:hidden; text-overflow:ellipsis;">💬 ${escapeHTML(session.title)}</span>
+          <button class="delete-session-btn" onclick="deleteSession('${session.id}', event)">✕</button>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    function renderCurrentChat() {
+      const chatBox = document.getElementById('chatBox');
+      chatBox.innerHTML = '';
+
+      const activeSession = state.sessions[state.currentSessionId];
+      if (!activeSession) return;
+
+      activeSession.history.forEach(msg => {
+        const type = msg.role === 'model' ? 'ai' : 'user';
+        appendMessageUI(msg.parts[0].text, type);
+      });
+    }
+
+    // --- 5. Message Handling & Gemini API Integration ---
+    async function sendMessage() {
+      const inputEl = document.getElementById('userInput');
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+
+      const activeSession = state.sessions[state.currentSessionId];
+      
+      // Auto-title conversation on first user input
+      if (activeSession.history.length <= 1) {
+        activeSession.title = text.length > 20 ? text.substring(0, 20) + '...' : text;
+        renderSidebar();
+      }
+
+      // 1. Add User Message to UI & State
+      appendMessageUI(text, 'user');
+      activeSession.history.push({ role: 'user', parts: [{ text }] });
+      saveStateToStorage();
+
+      // 2. Show Gemini Thinking Animation
+      const thinkingEl = showThinkingAnimation();
+
+      try {
+        // Post entire session history to backend
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ history: activeSession.history })
+        });
+
+        const data = await response.json();
+        thinkingEl.remove();
+
+        if (response.status === 429) {
+          appendMessageUI(data.error || "Too many messages. Please pause for a minute.", 'ai');
+        } else if (data.text) {
+          appendMessageUI(data.text, 'ai');
+          activeSession.history.push({ role: 'model', parts: [{ text: data.text }] });
+          saveStateToStorage();
+        } else {
+          appendMessageUI("I encountered an issue processing your request.", 'ai');
+        }
+      } catch (err) {
+        thinkingEl.remove();
+        appendMessageUI("Network error: Unable to communicate with MindGuard backend.", 'ai');
+      }
+    }
+
+    function appendMessageUI(text, sender) {
+      const chatBox = document.getElementById('chatBox');
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', sender);
+      msgDiv.innerText = text;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return msgDiv;
+    }
+
+    function showThinkingAnimation() {
+      const chatBox = document.getElementById('chatBox');
+      const container = document.createElement('div');
+      container.classList.add('thinking-container');
+      container.innerHTML = `
+        <div class="thinking-text">✨ MindGuard-AI is reflecting...</div>
+        <div class="shimmer-line"></div>
+        <div class="shimmer-line" style="width: 70%;"></div>
+      `;
+      chatBox.appendChild(container);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return container;
+    }
+
+    // --- 6. Helper Functions ---
+    function handleKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      } else {
+        autoResizeInput(e.target);
+      }
+    }
+
+    function autoResizeInput(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('open');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('open');
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+  </script>
+</body>
+</html>
