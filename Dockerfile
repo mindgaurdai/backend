@@ -1,24 +1,24 @@
 # Use lightweight Node.js 20 base image
 FROM node:20-alpine
 
-# Set working directory inside the container
+# Set working directory inside container
 WORKDIR /app
 
-# Copy dependency manifests first for Docker layer caching
+# Copy package manifests
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Install production dependencies safely
+RUN npm install --omit=dev
 
-# Copy application source code and public frontend assets
+# Copy rest of application files
 COPY . .
 
-# Environment variables (PORT default, GEMINI_API_KEY passed at runtime)
+# Set default production port
 ENV PORT=3000
 ENV NODE_ENV=production
 
-# Expose backend port
+# Expose container port
 EXPOSE 3000
 
-# Start the MindGuard-AI Express server
+# Start server
 CMD ["node", "server.js"]
