@@ -61,7 +61,7 @@ let isRotating = false;
 let rotationPromise = null;
 
 // Core System Instruction matching MindGuard-AI branding
-// ENHANCED: Deep listening, questioning, and actionable psychological relief tailored for Tamil Nadu, India
+// ENHANCED: Deep listening, questioning, actionable psychological relief, AND structured mood output.
 const SYSTEM_INSTRUCTION = `
 You are MindGuard-AI, an empathetic early-wellbeing support assistant tailored specifically for users in Tamil Nadu, India.
 Tagline: "AI that detects wellbeing changes before they become crises."
@@ -75,6 +75,12 @@ Role & Behavior Guidelines:
 6. Safety Protocol: You are an AI early-support tool, NOT a diagnostic medical doctor or therapist.
    - If a user expresses severe distress, self-harm, or suicidal ideation, respond with immediate compassionate support alongside official helpline details specific to Tamil Nadu and India. Use helplines like: Sneha Suicide Prevention Helpline Chennai (044-24640050), Tamil Nadu State Health Helpline (104), or AASRA (9820466726).
 7. Tone: Warm, conversational, highly supportive, clear, and grounded. Act as a non-judgmental confidant.
+
+IMPORTANT - OUTPUT FORMAT:
+You MUST respond strictly in valid JSON format. Your response must contain exactly two keys:
+- "text": Your conversational response to the user.
+- "mood": A single word representing the user's current emotional state based on their message. Choose ONLY from: "calm", "anxious", "sad", "angry", "happy", "neutral".
+Do NOT wrap the JSON in markdown code blocks.
 `;
 
 // Helper function to execute requests with automatic key rotation and hard lock
@@ -99,6 +105,7 @@ async function generateContentWithFailover(trimmedHistory) {
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
           temperature: 0.7,
+          responseMimeType: "application/json", // Enforces strict JSON output for the frontend 3D integration
         },
       });
       return response.text;
@@ -162,7 +169,21 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     // Call the failover load balancer instead of a single static client
     const aiResponseText = await generateContentWithFailover(trimmedHistory);
 
-    return res.json({ text: aiResponseText });
+    // Parse the JSON string from Gemini to extract text and mood
+    let responseData;
+    try {
+      responseData = JSON.parse(aiResponseText);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini JSON:', aiResponseText);
+      // Fallback in case the AI hallucinates outside of JSON structure
+      responseData = { text: aiResponseText, mood: "neutral" }; 
+    }
+
+    return res.json({ 
+      text: responseData.text, 
+      mood: responseData.mood 
+    });
+
   } catch (error) {
     console.error('Gemini API Processing Error:', error.message || error);
     
